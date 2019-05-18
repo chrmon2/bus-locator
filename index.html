@@ -1,0 +1,267 @@
+<!--
+  Original Developers: Azam A. '19, Zak S. '21, Chris M. '21
+
+  Made for: Niles West High School or other high schools
+
+  Description: To allow students to locate their buses after
+  school in an efficient manner. Displays location of buses
+  in lineup by number via staff input.
+-->
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" type="text/css" href="indexStyle.css">
+    <title>NW Bus App</title>
+
+    <!--firebase-->
+    <script src="https://www.gstatic.com/firebasejs/5.8.1/firebase.js"></script>
+    <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro" rel="stylesheet">
+
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <meta content="utf-8" http-equiv="encoding">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-133322423-2"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'UA-133322423-2');
+    </script>
+
+  </head>
+
+  <body id="body">
+    <div id="container">
+      <span><img id="logo" src="nwlogo.png" ></img> </span>
+
+<!-- header -->
+    <h1 id="date"></h1>
+      <button id="loginButton" onclick="location.href='./staff.html';">Staff Login</button>
+    <center><h2 id="welcomeText">Welcome to the Niles West Bus Locator!</h2></center>
+
+<!-- Instructions/Information-->
+    <center><p id="instruct" class="instructions">If you see your bus number below, your bus has arrived at that location! (Buses leave promptly at 3:40 PM)</p></center>
+    <center><p style="display: none" id="alt-text">If you see your bus number below, your bus has arrived at that location! (Buses leave promptly at 3:40 PM) <br/> Christian M. '21 (User Interface), Zakariya S. '21 (Backend & Security), Azam A. '19 (Invention/Project Management)</footer></center>
+
+    <center><a id="pdf" class="busInfoLink" href="BusRouteInfo.pdf" target="_blank">Click here for bus route info</a></center>
+
+<!--Main Bus Image-->
+    <center><canvas id ="myCanvas" width="960" height="400" style="border-radius: 12px; border: 1px solid black"></canvas></center>
+
+    <!-- <div id="overlay">
+      <center><img style="color: white; position: relative; top: 15vh; width: 60vw; height: 60vw;" src="phone-flip.png"></img></center>
+      <center><p id="overlayText" style="color: white; position: relative; top: 15vh; font-size: 10vw;">Please Rotate Your Screen To Landscape Mode.</p></center>
+    </div> -->
+
+    <!-- <a href="https://play.google.com/store/apps/details?id=com.nwbus.programmingknowledge.easyonlineconverter">ANDROID APP!</a> -->
+
+<!--Acknowledgements-->
+<center><footer id="acknowledgements">Christian M. '21 (User Interface) | Zakariya S. '21 (Backend & Security) | Azam A. '19 (Invention/Project Management)</footer></center>
+<br/>
+</div>
+
+<script>
+//
+// var orientation = getOrientation();
+//
+// if(orientation == "landscape") {
+//   overlay.style.display = "none";
+//   body.style.overflowX = "auto";
+//   body.style.overflowY = "auto";
+// }
+// else {
+//   overlay.style.display = "initial";
+//   body.style.overflowX = "hidden";
+//   body.style.overflowY = "hidden";
+// }
+//
+// function getOrientation(){
+//     var orientation = window.innerWidth > window.innerHeight ? "landscape" : "portrait";
+//     return orientation;
+// // }
+//
+//  window.onresize = function(){
+//    var orientation = getOrientation();
+//
+//    if(orientation == "landscape") {
+//      overlay.style.display = "none";
+//      body.style.overflowX = "auto";
+//      body.style.overflowY = "auto";
+//    }
+//    else {
+//      overlay.style.display = "initial";
+//      body.style.overflowX = "hidden";
+//      body.style.overflowY = "hidden";
+//    }
+//  }
+
+  // Initialize Firebase
+  var config = {
+  apiKey: "AIzaSyCFSkKoFb64xjjqkdnr9romgfCn-D5PHDk",
+  authDomain: "bus-locator-cdee8.firebaseapp.com",
+  databaseURL: "https://bus-locator-cdee8.firebaseio.com",
+  projectId: "bus-locator-cdee8",
+  storageBucket: "bus-locator-cdee8.appspot.com",
+  messagingSenderId: "186032714709"
+};
+  firebase.initializeApp(config);
+
+  var database = firebase.database();
+
+  var canvas = document.getElementById("myCanvas");
+  var ctx = canvas.getContext("2d");
+  var unit = canvas.height/10;
+  var holding = 'none';
+  var waitingBus = null;
+  var mouseX = 0;
+  var mouseY = 0;
+
+  var img = new Image();
+  img.src = "canvas_BG.png";
+
+  var width = window.innerWidth-20;
+  var baseLine = 1440 / 1.5;
+
+  var scale = width / baseLine;
+
+  if(window.innerWidth > 1800) {
+      canvas.style.transform = "scale(" + scale + ")";
+      canvas.style.position = "relative";
+      canvas.style.top = "26vh";
+
+      document.getElementById('pdf').style.display = "none";
+      document.getElementById('instruct').style.display = "none";
+      document.getElementById('loginButton').style.display = "none";
+
+      document.getElementById('acknowledgements').style.display = "none";
+      document.getElementById('alt-text').style.display = "initial";
+      document.getElementById('alt-text').style.fontSize = "25px";
+  }
+
+//functions to make pixel vals more user friendly
+  function numOption(x, y, num) {
+    this.x = x;
+    this.y = y;
+    this.width = .5;
+    this.height = .5;
+    this.num = num;
+  }
+
+  function findPos(element) {
+  if (element) {
+    var parentPos = findPos(element.offsetParent);
+    return parseInt(parentPos.Y + element.offsetTop);
+  }
+  else {
+    return 0;
+  }
+}
+
+  function busOption(x, y, num) {
+    this.x = x - .13;
+    this.y = y;
+    this.width = .75;
+    this.height = .5;
+    this.num = num;
+  }
+	document.getElementById('date').innerHTML = new Date().toDateString();
+
+  var numOptions = [];
+  var busOptions = [];
+
+  for(var i = 0; i < 3; i++) {
+    for(var j = 0; j < 10; j++) {
+      numOptions.push(new numOption(j, i + 7, i * 10 + j + 1));
+    }
+  }
+    busOptions.push(new busOption(1.675, 0.6));
+    busOptions.push(new busOption(1.5, 1.155));
+    busOptions.push(new busOption(3.4, 1.23));
+    busOptions.push(new busOption(3.175, 1.83));
+    busOptions.push(new busOption(5.125, 1.81));
+    busOptions.push(new busOption(4.93, 2.41));
+    busOptions.push(new busOption(6.68, 2.4));
+    busOptions.push(new busOption(6.58, 3.1));
+    busOptions.push(new busOption(8.5, 3.1));
+    busOptions.push(new busOption(8.3, 3.7));
+    busOptions.push(new busOption(10.29, 3.5));
+    busOptions.push(new busOption(10.29, 4.15));
+    busOptions.push(new busOption(12.88, 3.5));
+    busOptions.push(new busOption(14.85, 3.51));
+    busOptions.push(new busOption(16.69, 3.5));
+    busOptions.push(new busOption(18.6, 3.5));
+    busOptions.push(new busOption(12.85, 4.15));
+    busOptions.push(new busOption(14.9, 4.15));
+    busOptions.push(new busOption(16.73, 4.15));
+    busOptions.push(new busOption(18.68, 4.15));
+    busOptions.push(new busOption(20.58, 3.56));
+    busOptions.push(new busOption(20.58, 4.16));
+    busOptions.push(new busOption(21.08, 5.48));
+    busOptions.push(new busOption(22.5, 5.46));
+
+  function drawBusOptions() {
+    for(var i = 0; i < busOptions.length; i++) {
+      if(busOptions[i].num != undefined) {
+        ctx.font = busOptions[i].height * unit * .6 + "px Arial";
+        ctx.fillStyle = "black";
+        ctx.textAlign = "center";
+        ctx.fillText(busOptions[i].num, (busOptions[i].x + busOptions[i].width/2) * unit, (busOptions[i].y + busOptions[i].height * 0.7) * unit);
+      }
+    }
+  }
+
+  function drawBusesHere() {
+    for(var i = 0; i < busOptions.length; i++) {
+      var busesHere = "Buses here:";
+      if(busOptions[i].num != undefined) {
+        busesHere += " " + busOptions[i].num;
+      }
+    }
+    ctx.font = 0.5*unit + "px Arial";
+    ctx.fillStyle = "white";
+    ctx.fillText(busesHere, 0*unit, 9*unit);
+  }
+
+  var busNums = firebase.database().ref('busNums');
+   busNums.on('value', function(snapshot) {
+     clearAll();
+    snapshot.forEach(function(childSnapshot) {
+      setBus(childSnapshot.val());
+    });
+    draw();
+  });
+
+  function setBus(busInfoString) {
+    var stringSplit = busInfoString.split(";");
+
+    for(var j = 0; j < busOptions.length; j++) {
+        if(busOptions[j].x == parseFloat(stringSplit[1]) && busOptions[j].y == parseFloat(stringSplit[2])){
+          busOptions[j].num = parseInt(stringSplit[0]);
+        }
+    }
+  }
+
+  function clearAll() {
+    for(var j = 0; j < busOptions.length; j++) {
+      busOptions[j].num = null;
+    }
+  }
+
+  function draw() {
+    ctx.drawImage(img, 0, 0, 24 * unit, 10 * unit);
+    drawBusOptions();
+    //drawBusesHere();
+  }
+
+  </script>
+
+  <p>
+
+
+  </p>
+  </body>
+</html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="loginStyle.css" />
+    <title>NW Bus App Login</title>
+    <script src="https://www.gstatic.com/firebasejs/5.8.1/firebase.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+     <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro" rel="stylesheet">
+
+		 <span><img id="logo" src="nwlogo.png" ></img> </span>
+
+  </head>
+
+  <body>
+    <center><div id="loginForm">
+      <h1 style=" font-size: 30px;">Login To Staff Page</h1>
+      <p></p>
+      <span style="font-size: 20px;">Enter Password Here:</span>
+       <input id="password" type="password" value="">
+       <br></br>
+      <button id="loginSubmit" onclick="login()">Login</button>
+
+      <h4 id="error"></h4>
+    </div></center>
+
+
+    <script language="JavaScript">
+    var x42 = [];
+    x42.push("GOTCHA");
+
+    // Initialize Firebase
+    var config = {
+      apiKey: "AIzaSyCFSkKoFb64xjjqkdnr9romgfCn-D5PHDk",
+      authDomain: "bus-locator-cdee8.firebaseapp.com",
+      databaseURL: "https://bus-locator-cdee8.firebaseio.com",
+      projectId: "bus-locator-cdee8",
+      storageBucket: "bus-locator-cdee8.appspot.com",
+      messagingSenderId: "186032714709"
+    };
+    firebase.initializeApp(config);
+
+      document.getElementById("password").addEventListener("keyup", function(event){
+        event.preventDefault();
+        if(event.keyCode === 13){
+          document.getElementById("loginSubmit").click();
+        }
+      });
+
+      function login() {
+        var starCountRef = firebase.database().ref('x42');
+        starCountRef.once('value', function(snapshot) {
+          if(document.getElementById('password').value == snapshot.val()){
+            window.location="./staff.html";
+            sessionStorage.setItem('status','loggedIn');
+          }
+          else{
+            document.getElementById('error').innerHTML = "Incorrect password.";
+            document.getElementById('error').style.color = "red";
+          }
+        });
+      }
+    </script>
+  </body>
+</html>
